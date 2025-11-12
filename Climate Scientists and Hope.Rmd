@@ -1,0 +1,520 @@
+---
+title: "Climate Scientists and Hope"
+author: "Deborah Apthorp"
+date: ""
+output: 
+  html_document:
+    fig_height: 3
+    fig_width: 5
+  pdf_document:
+    fig_height: 3
+    fig_width: 5
+  word_document:
+    fig_height: 3
+    fig_width: 5
+---
+
+```{r, setup, include=FALSE}
+require(mosaic)   # Load additional packages here 
+library(readr)
+library(haven)
+library(stringr)
+library(janitor)
+library(tidyverse)
+library(tidyr)
+library(table1)
+library(expss)
+library(psych)
+library(dplyr)
+library(ggpubr)
+library(ggplot2)
+library(kableExtra)
+library(tableone)
+library(effectsize)
+library(lm.beta)
+library(purrr)
+library(broom)
+library(interactions)
+library(jtools)
+knitr::opts_chunk$set(
+  tidy=FALSE,     # display code as typed
+  size="small")   # slightly smaller font for code
+```
+
+## Part 1: Data collected in 2017 (Jude's thesis)
+
+```{r, load and wrangle data, include=FALSE}
+Jude_thesis_dataset <- read_sav("Jude-thesis-complete-dataset-edited.sav")
+
+Jude_thesis_dataset <- clean_names(Jude_thesis_dataset) # use janitor to clean column names
+
+val_lab(Jude_thesis_dataset$gender) = num_lab("
+             1 Male
+             2 Female   
+             3 Other    ")  # Add value labels (not sure why they didn't come through with the import)
+
+val_lab(Jude_thesis_dataset$highest_ed) = num_lab("
+             1 Doctoral Degree
+             2 Masters Degree
+             3 Honours/graduate diploma
+             4 Bachelor degree
+             5 Other    ") 
+
+```
+
+### Background: Surveys and other questions
+
+This data was collected from individuals identified as climate scientists via an online survey (via email invitation) in 2017. It was presented in an Honours thesis by Jude Fox the same year but has not yet been published. 
+
+This dataset included some demographic questions (age, gender, country of residence, country of work, nature of work, number of years working, and highest level of education), a question about whether the participants agreed with the IPCC's findings that anthropogenic climate change is occurring and is a grave threat to the planet (yes, no, or "it's complicated"), and a set of surveys addressing both qualitative and quantitative questions. 
+
+Included surveys were the DASS-21 (Depression, Anxiety and Stress Scale, short form; Henry & Crawford, 2005), the CBI (Copenhagen Burnout Inventory; Borritz & Kristensen, 2004), and two single-item questions about hope for the future and worry about the future, followed by free-text response boxes. There are also some questions from a scale with the prefix "warr_", - I'm not sure what scale they come from, as it wasn't included in the thesis.  
+
+### Descriptive stats 
+
+I first set out to reproduce the results in the thesis. After removing the participant who was marked as having bad data, and the first participant in the dataset who appears to have been piloting the survey, I was able to fairly closely reproduce the results reported in the thesis, with a few exceptions. 
+
+```{r calculate descriptive stats, echo = FALSE, include = FALSE}
+
+myVars <- c("age", "years_working", "cbi_personal", "cbi_work", "hopeful_future_rating", "dass_total" ,"gender", "highest_ed")
+catVars <- c("gender", "highest_ed")
+
+tab1 <- print(CreateTableOne(vars = "age", strata = "gender", data = Jude_thesis_dataset))
+tab2 <- print(CreateTableOne(vars = myVars, data = Jude_thesis_dataset, factorVars = catVars, ), showAllLevels = TRUE)
+
+```
+
+
+```{r table one, echo=FALSE}
+tab1 %>%
+  kable(caption = "Descriptive statistics for age by gender") %>%
+  kable_styling()
+```
+
+From the thesis: "Fifty-nine climate change scientists volunteered to participate in response to an emailed invitation.  The 9 women were aged from 28 to 62 years (M = 46.00, SD = 11.79), and the 50 men from 28 to 80 years (M = 56.78, SD = 11.50)."
+
+```{r table two, echo=FALSE}
+tab2 %>%
+  kable(caption = "Descriptive statistics for key variables") %>%
+  kable_styling()
+```
+
+This largely reproduces the information in Table 1 in the thesis (minus the population figures). 
+
+### Reliability stats 
+
+The thesis reports reliability stats for the DASS subscales, although it goes on to use the overall mean rather than any of the subscales, under the label of "mental health". 
+
+```{r reliability calculations, echo = FALSE, include = FALSE}
+## DASS reliability
+depression <- select(Jude_thesis_dataset, dass_3r, dass_5r, dass_10r, dass_13r, dass_16r, dass_17r, dass_21r) #each number refers to the column
+anxiety <- select(Jude_thesis_dataset, dass_2r, dass_4r, dass_7r, dass_9r, dass_15r, dass_19r, dass_20r)
+stress <- select(Jude_thesis_dataset, dass_1r, dass_6r, dass_8r, dass_11r, dass_12r, dass_14r, dass_18r)
+
+dep_alpha <- alpha(depression)
+anx_alpha <- alpha(anxiety)
+str_alpha <- alpha(stress)
+
+## CBI reliability
+personal_burnout <- select(Jude_thesis_dataset, cbi_p_1r, cbi_p_2r, cbi_p_3r, cbi_p_4r, cbi_p_5r, cbi_p_6r)
+work_burnout <- select(Jude_thesis_dataset, cbi_w_1r, cbi_w_2r, cbi_w_3r, cbi_w_4r, cbi_w_5r, cbi_w_6r, cbi_w_7rr)
+
+cbi_pers_alpha <- alpha(personal_burnout)
+cbi_work_alpha <- alpha(work_burnout, check.keys = TRUE)
+
+tab3 <- print(dep_alpha$total)
+tab4 <- print(anx_alpha$total)
+tab5 <- print(str_alpha$total)
+
+tab6 <- print(cbi_pers_alpha$total)
+tab7 <- print(cbi_work_alpha$total)
+```
+
+```{r table three, echo=FALSE}
+tab3 %>%
+  kable(caption = "DASS depression reliability", digits = 2) %>%
+  kable_styling()
+```
+
+
+
+```{r table four, echo=FALSE}
+tab4 %>%
+  kable(caption = "DASS anxiety reliability", digits = 2) %>%
+  kable_styling()
+```
+
+
+```{r table five, echo=FALSE}
+tab5 %>%
+  kable(caption = "DASS stress reliability", digits = 2) %>%
+  kable_styling()
+```
+
+These reproduce the figures reported in the thesis:
+
+"This scale has good internal reliability with Cronbach’s alphas of .88 for the depression subscale, .82 for anxiety, and .90 for stress (Henry & Crawford, 2005). **Respective Cronbach’s alphas for this sample were .78, .65, and .82.** "
+
+
+Note that these were calculated using the `psych` package in R
+
+
+Reliability for the Copenhagen Burnout Inventory was also closely reproduced. 
+
+```{r table six, echo=FALSE}
+tab6 %>%
+  kable(caption = "Copenhagen Burnout Inventory Personal Subscale", digits = 2) %>%
+  kable_styling()
+```
+
+
+```{r table seven, echo=FALSE}
+tab7 %>%
+  kable(caption = "Copenhagen Burnout Inventory Work Subscale", digits = 2) %>%
+  kable_styling()
+```
+
+
+From the thesis: 
+
+"The Copenhagen Burnout Inventory (Borritz & Kristensen, 2004) measures personal-burnout ($\alpha = .87$) and work-burnout ($\alpha = .87$). **Respective Cronbach’s alphas for this sample were .85 and .86.**"
+
+### Hypothesis tests - comparing means to normative sample
+
+```{r hypothesis tests, echo = FALSE, include = FALSE}
+## Hypothesis tests - comparing means to normative sample
+
+t_dass <- t.test(Jude_thesis_dataset$dass_total, mu=9.43)
+d_dass <- Jude_thesis_dataset %>% rstatix::cohens_d(dass_total ~ 1, mu = 9.43, ci = TRUE)
+
+t_personal_burnout <- t.test(Jude_thesis_dataset$cbi_personal, mu= 35.9)
+d_personal_burnout <- Jude_thesis_dataset %>% rstatix::cohens_d(cbi_personal ~ 1, mu = 35.9, ci = TRUE)
+
+
+t_work_burnout <- t.test(Jude_thesis_dataset$cbi_work, mu= 33.0)
+d_work_burnout <- Jude_thesis_dataset %>% rstatix::cohens_d(cbi_work ~ 1, mu = 33, ci = TRUE)
+
+# Paired t-test 
+x = Jude_thesis_dataset$cbi_personal
+y = Jude_thesis_dataset$cbi_work
+
+
+t_paired_cbi <- t.test(x, y, paired = TRUE)
+d_paired_cbi <- effectsize::cohens_d(x, y, paired = TRUE)
+
+
+```
+
+
+```{r hyptests 1, echo = FALSE}
+
+tab <- map_df(list(t_dass, t_personal_burnout, t_work_burnout), tidy)
+
+tab <- tab[c("estimate", "statistic", "p.value", "conf.low", "conf.high")]
+
+tab <- as.data.frame(tab)
+row.names(tab) <- c("DASS total","Personal Burnout","Work Burnout")
+
+tab %>%
+  kable(caption = "Single-sample t-tests for DASS and CBI scales", digits = c(2, 2, 3, 2, 2)) %>%
+  kable_styling()
+```
+
+
+From the thesis: 
+
+"Mental health measured 1.06 points below the general population mean, ***t(58) = -1.33, p = .187, d = 0.14, 95% CI [–0.22, 0.50]**.  Personal-burnout measured 1.79 points below the general population mean, **t(58) = -0.81, p = .421, d = -0.11, 95% CI [–0.22, 0.50]**.  Work-burnout measured 3.40 points below the general population mean, **t(58) = -1.61, p = .114, d = -0.21, 95% CI [-0.57, 0.15]**. "
+
+It is clear that the confidence intervals shown above are for the estimate, not the effect size, so let's have a look at the effect sizes: 
+
+```{r effect sizes, echo = FALSE}
+tab_eff <- rbind(d_dass, d_personal_burnout, d_work_burnout)
+
+tab_eff <- tab_eff[c(".y.", "effsize", "conf.low", "conf.high", "magnitude")]
+
+tab_eff <- as.data.frame(tab_eff)
+
+tab_eff %>%
+  kable(caption = "Cohen's d for DASS and CBI scales", digits = 2) %>%
+  kable_styling()
+
+```
+
+
+Hmmm. The effect sizes (apart from the DASS total) seem to match, but the CIs are not perfectly reproduced. Maybe this is something about how SPSS does CIs, I guess? 
+
+Next up is paired t-tests: 
+
+"A paired samples t-test indicated that personal-burnout was higher than work-burnout.  This difference was significant, **t(58) = 3.28, p = .002, two‐tailed**, and small, **d = .27, 95% CI [0.01, 0.53]**.  The personal-burnout measure was used in the subsequent analyses as it captured more negative affectivity than the work-burnout measure."
+
+```{r paired t-tests, echo = FALSE}
+# Paired t-test 
+x = Jude_thesis_dataset$cbi_personal
+y = Jude_thesis_dataset$cbi_work
+
+
+t_paired_cbi <- t.test(x, y, paired = TRUE)
+d_paired_cbi <- effectsize::repeated_measures_d(x, y, paired = TRUE)
+
+tab_paired <- map_df(list(t_paired_cbi), tidy)
+
+tab_paired <- tab_paired[c("estimate", "statistic", "p.value")]
+
+d_paired_cbi <- d_paired_cbi[c("d_rm", "CI_low", "CI_high")]
+
+tab_paired_effsize <- as.data.frame (d_paired_cbi)
+
+tab_effsize_paired <- merge(tab_paired, tab_paired_effsize)
+
+tab_effsize_paired %>%
+  kable(caption = "Statistics and effect size for paired t-test between CBI Personal and CBI Work", digits = c(2, 2, 3, 2, 2, 2)) %>%
+  kable_styling()
+
+```
+
+
+Again, the statistic, p-value and effect size are reproduced perfectly, but the CI doesn't seem to match. 
+
+
+###  Correlations and multiple regression
+
+The thesis reports that "the association between age and personal-burnout was significant, negative, and medium in size,  **r(57) = -.38, p = .001, $r^2$ = .15**.
+
+``` {r plot correlation, echo = FALSE}
+
+cor_cbi_age <- cor.test(Jude_thesis_dataset$cbi_personal, Jude_thesis_dataset$age)
+rsq_cbi_age <- cor_cbi_age$estimate^2
+
+ggscatter(Jude_thesis_dataset, x = "age", y = "cbi_personal", 
+          add = "reg.line", conf.int = TRUE, cor.coeff.args = list(alternative = "less"),
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Age", ylab = "Personal Burnout")
+```
+
+
+Initially I wondered why the p-value was different, but then I realised that this was a one-tailed test, as the hypothesis was that the relationship would be negative, so that makes sense. So I've altered the plot to show that. You can get $r^2$ from $r$, so  `r cor_cbi_age$estimate` squared is `r cor_cbi_age$estimate^2`.
+
+Next we look at the multiple regression/moderation analysis. I used the `lm` package for this, centering the variables as suggested in the thesis. 
+
+```{r multiple regression, echo = FALSE}
+
+model1 <- cbi_personal~age + hopeful_future_rating
+newData <- lapply(Jude_thesis_dataset[, all.vars(model1)], center) # Center the relevant variables
+m1 <- lm(cbi_personal~age*hopeful_future_rating-1, data = as.data.frame(newData))
+
+mr <- summary(m1)
+
+coeff_table <- as.data.frame(mr$coefficients)
+
+colnames(coeff_table) <- c("Beta", "Standard Error", "t value", "p value")
+
+coeff_table  %>%
+  kable(caption = "Coefficients for the multiple regression model of age and hope for the future on personal burnout", digits = c(2, 2, 2, 3)) %>%
+  kable_styling()
+```
+
+These betas are not standardised betas here - we can get them using `lm.beta`: 
+
+```{r standardised beta, echo = FALSE}
+
+sb <- lm.beta(m1)
+sb$standardized.coefficients   %>%
+  kable(caption = "Standardised beta values for the multiple regression model of age and hope for the future on personal burnout", digits = 2) %>%
+  kable_styling()
+
+```
+
+
+The whole model is significant, $F$(`r mr$fstatistic[[2]]`, `r mr$fstatistic[[3]]`) = `r mr$fstatistic[[1]]`,  $R^2$ = `r mr$r.squared`, $Adj. R^2$ = `r mr$adj.r.squared`. This is fairly close to the statistics reported in Table 2 in the thesis. 
+
+
+### Interaction analysis
+
+We can have a look at the patterns of the interaction between age and hope using the `interactions` package, which is similar to the custom SPSS syntax used in the thesis: 
+
+```{r interaction plots, echo=FALSE}
+
+p <- interact_plot(m1, pred = age, modx = hopeful_future_rating, plot.points = TRUE)
+
+p + xlab("Age (centered)") + ylab("Burnout (centered)") + theme_classic()
+
+
+```
+
+## Part 2: Data collected in 2025
+
+In January 2025 we set out to collect some new data from climate scientists, in the light of Trump's re-election in the US and renewed fears about policy on climate. On 3rd March 2025, we emailed a list of 7,446 climate scientists from a list compiled from various sources (PubMed, IPCC, etc.). Of these, 7 messages failed and 1492 messages bounced, according to Qualtrics. This means that 5,947 emails were delivered. From these, some respondents emailed us with further suggestions, and we sent 12 emails from these contributed addresses, which resulted in 4 surveys started and 3 finished. From the original list, 544 were started and 402 finished. We compiled a list based on emails that had not "hard" bounced and had not resulted in a survey completion; on 5th June 2025 we sent out a reminder email to this list (5,746 emails), of which 161 bounced. From this email, 236 surveys were started and 159 finished. In total, we now have 567 recorded responses to the survey, a response rate of just under 10 percent. 
+
+The survey contained similar demographic questions to the previous survey [NOTE: ASK AMY IF ANY WERE ADDED]. 
+
+Scales used were, as before, the Copenhagen Burnout Inventory (CBI), which has personal and work subscales, and the DASS-21, as well as the Hogg Eco-Anxiety Scale, the Short Warwick-Edinburgh Mental Well-being Scale (SWEMWBS) [note this requires a licence, do we have one?], the SPOS (Survey of Perceived Organisational Support), a scale of Coping [ASK AMY WHAT THIS IS] [from Estonian paper - problem-focused coping, emotion-focused coping, avoidance - do CFI?], and the WAMI (Work and Meaning Inventory), as well as some open-ended questions following two rating scales. Participants were asked to rate how hopeful they felt about the future (on a scale of 1 to 100, from "absolutely no hope" to "extremely hopeful"), followed by three open-ended questions: Why do you feel this way? What makes you hopeful? What makes you feel not hopeful, or affects your ability to feel hopeful?. Finally they were asked to rate how worried they felt about the future, followed by three similar open-ended questions.
+
+Firstly, we might ask whether the figures in this survey are similar to those in the last - are climate scientists more burnt out now than they were in 2017? This sample is much larger than the previous one, and we don't know yet whether the gender and age balances are similar. Should we also compare to the population mean, and if so, do we have current figures? 
+
+Are climate scientists more depressed, anxious and/or stressed then previously? Again, we can compare this to the previous study and/or to the population mean. 
+
+Then, also, we can compare hope for the future and worry about the future to the previous survey. 
+
+Next we need to consider whether we have any specific hypotheses about the other scales. 
+
+NOTES: Mental health - worse because after pandemic? Probably all worse? 
+
+Hope for the future & worry - could still compare? 
+
+Do American researchers feel lower levels of organisational support than their colleagues in the rest of the world? 
+
+Let's plan the code for analysing the new data. 
+
+
+```{r reliability calculations and scores NEW, echo = FALSE, include = FALSE}
+Climate_data_new <- read_sav('Data/Climate_data_new.sav')
+
+Climate_data_new <- clean_names(Climate_data_new) # use janitor to clean column names
+
+## More wrangling here - e.g. filter out anyone whose progress is less than 70%? Ask Amy. 
+
+Climate_data_new <- filter(Climate_data_new, progress>40 & distribution_channel!='anonymous')
+
+val_lab(Climate_data_new$gender) = num_lab("
+             1 Male
+             2 Female   
+             3 Other    ")  # Add value labels (not sure why they didn't come through with the import)
+
+val_lab(Climate_data_new$education) = num_lab("
+             5 Doctoral Degree
+             4 Masters Degree
+             3 Honours/graduate diploma
+             2 Bachelor degree
+             1 Other    ") 
+
+## DASS reliability
+depression <- select(Climate_data_new, dass21_3, dass21_5, dass21_10, dass21_13, dass21_16, dass21_17, dass21_21) #each number refers to the column
+anxiety <- select(Climate_data_new, dass21_2, dass21_4, dass21_7, dass21_9, dass21_15, dass21_19, dass21_20)
+stress <- select(Climate_data_new, dass21_1, dass21_6, dass21_8, dass21_11, dass21_12, dass21_14, dass21_18)
+
+dep_alpha <- alpha(depression)
+anx_alpha <- alpha(anxiety)
+str_alpha <- alpha(stress)
+
+keys_dass <- c(1,1,1,1,1,1,1)
+
+dep_scores<- scoreItems(keys_dass, depression, totals=TRUE)
+anx_scores<- scoreItems(keys_dass, anxiety, totals=TRUE)
+str_scores<- scoreItems(keys_dass, stress, totals=TRUE)
+
+Climate_data_new$dass_depression <- dep_scores$scores
+Climate_data_new$dass_anxiety <- anx_scores$scores
+Climate_data_new$dass_stress <- str_scores$scores
+Climate_data_new$dass_total <- sum(Climate_data_new$dass_depression, Climate_data_new$dass_anxiety, Climate_data_new$dass_stress) # to do: make this nicer using dplyr. 
+
+## CBI reliability
+personal_burnout <- select(Climate_data_new, cbi_personal_1, cbi_personal_2, cbi_personal_3, cbi_personal_4, cbi_personal_5, cbi_personal_6)
+work_burnout <- select(Climate_data_new, cbi_work1_1, cbi_work1_2, cbi_work1_3, cbi_work2_1, cbi_work2_2, cbi_work2_3, cbi_work2_4)
+
+keys_cbi_personal <- c(1,1,1,1,1,1)
+keys_cbi_work <- c(1,1,1,1,1,1,-1) # It seems fairly clear that the last item on this should be reverse  scored. 
+
+
+cbi_pers_alpha <- alpha(personal_burnout)
+cbi_work_alpha <- alpha(work_burnout,  keys=keys_cbi_work)
+
+tab2_3 <- print(dep_alpha$total)
+tab2_4 <- print(anx_alpha$total)
+tab2_5 <- print(str_alpha$total)
+
+tab2_6 <- print(cbi_pers_alpha$total)
+tab2_7 <- print(cbi_work_alpha$total)
+
+
+cbi_pers_scores<- scoreItems(keys_cbi_personal, personal_burnout, totals=FALSE)
+cbi_work_scores<- scoreItems(keys_cbi_work, work_burnout, totals=FALSE)
+
+Climate_data_new$cbi_personal_mean <- cbi_pers_scores$scores
+Climate_data_new$cbi_work_mean <- cbi_work_scores$scores
+
+## Hogg Scale reliability and scoring 
+hogg_scale_total <- select(Climate_data_new, hogg_scale_1, hogg_scale_2, hogg_scale_3, hogg_scale_4, hogg_scale_5, hogg_scale_6, hogg_scale_7, hogg_scale_8, hogg_scale_9, hogg_scale_10, hogg_scale_11, hogg_scale_12, hogg_scale_13)
+keys_hogg_total <- c(1,1,1,1,1,1,1,1,1,1,1,1,1)
+
+hogg_scale_affective <- select(Climate_data_new, hogg_scale_1, hogg_scale_2, hogg_scale_3, hogg_scale_4)
+keys_hogg_affective <- c(1,1,1,1)
+
+hogg_scale_rumination <- select(Climate_data_new, hogg_scale_5, hogg_scale_6, hogg_scale_7)
+hogg_scale_behavioural <- select(Climate_data_new, hogg_scale_8, hogg_scale_9, hogg_scale_10)
+hogg_scale_PI <- select(Climate_data_new, hogg_scale_11, hogg_scale_12, hogg_scale_13)
+keys_hogg_other <- c(1,1,1)
+
+hogg_total_scores<- scoreItems(keys_hogg_total, hogg_scale_total, totals=TRUE)
+Climate_data_new$hogg_total_score <- hogg_total_scores$scores
+hogg_total_alpha <- alpha(hogg_scale_total)
+
+hogg_affective_scores<- scoreItems(keys_hogg_affective, hogg_scale_affective)
+Climate_data_new$hogg_affective_score <- hogg_affective_scores$scores
+hogg_affective_alpha <- alpha(hogg_scale_affective)
+
+hogg_rumination_scores<- scoreItems(keys_hogg_other, hogg_scale_rumination)
+Climate_data_new$hogg_rumination_score <- hogg_rumination_scores$scores
+hogg_rumination_alpha <- alpha(hogg_scale_rumination)
+
+hogg_behavioural_scores<- scoreItems(keys_hogg_other, hogg_scale_behavioural)
+Climate_data_new$hogg_behavioural_score <- hogg_behavioural_scores$scores
+hogg_behavioural_alpha <- alpha(hogg_scale_behavioural)
+
+hogg_PI_scores<- scoreItems(keys_hogg_other, hogg_scale_PI)
+Climate_data_new$hogg_PI_score <- hogg_PI_scores$scores
+hogg_PI_alpha <- alpha(hogg_scale_PI)
+
+## Coping scale 
+
+coping_PF <- select(Climate_data_new, coping_1, coping_2, coping_3)
+coping_EF <- select(Climate_data_new, coping_4, coping_5, coping_6, coping_7)
+coping_avoidance <- select(Climate_data_new, coping_8, coping_9, coping_10, coping_11)
+
+keys_coping_pf <- c(1,1,1)
+keys_coping_other <- c(1,1,1,1)
+
+coping_PF_scores<- scoreItems(keys_coping_pf, coping_PF)
+coping_EF_scores<- scoreItems(keys_coping_other, coping_EF)
+coping_avoidance_scores<- scoreItems(keys_coping_other, coping_avoidance)
+
+Climate_data_new$coping_PF_score <- coping_PF_scores$scores
+Climate_data_new$coping_EF_score <- coping_EF_scores$scores
+Climate_data_new$coping_avoidance_score <- coping_avoidance_scores$scores
+
+coping_PF_alpha <- alpha(coping_PF)
+coping_EF_alpha <- alpha(coping_EF)
+coping_avoidance_alpha <- alpha(coping_avoidance)
+
+# Should probably do CFA on these scores too? 
+
+## SPOS scale
+
+SPOS_scale <- select (Climate_data_new,  spos_1, spos_2,spos_3, spos_4,spos_5, spos_6, spos_7, spos_8)
+
+keys_spos <- c(1,-1,-1,1,-1,1,-1,1) # items 2, 3, 5 and 7 are reverse coded 
+SPOS_scores<- scoreItems(keys_spos, SPOS_scale)
+Climate_data_new$SPOS_score <- SPOS_scores$scores
+SPOS_alpha <- alpha(SPOS_scale, keys=keys_spos)
+
+## SWEMWBS scale
+SWEMWS_scale <- select (Climate_data_new,  swemws_1, swemws_2,swemws_3, swemws_4,swemws_5, swemws_6, swemws_7)
+keys_swemws <- c(1,1,1,1,1,1,1)
+SWEMWS_scores<- scoreItems(keys_swemws, SWEMWS_scale)
+Climate_data_new$SWEMWS_score <- SWEMWS_scores$scores
+SWEMWS_alpha <- alpha(SWEMWS_scale)
+```
+
+### Documentation
+
+Here is some information about how this file was created.
+
+  * File creation date: `r Sys.Date()`
+  * `r R.version.string`
+  * R version (short form): `r getRversion()`
+  * `mosaic` package version: `r packageVersion("mosaic")`
+  * Additional session information
+  
+```{r echo=FALSE}
+sessionInfo()  # could use devtools::session_info() if you prefer that
+```
+  
