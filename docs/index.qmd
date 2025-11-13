@@ -45,7 +45,7 @@ library(patchwork)
 ```{r import and wrangle data}
 #| echo: false
 ## Load and wrangle dataset from Time 1
-Jude_thesis_dataset <- read_sav("Jude-thesis-complete-dataset-edited.sav")
+Jude_thesis_dataset <- read_sav("Data/Jude-thesis-complete-dataset-edited.sav")
 
 Jude_thesis_dataset <- clean_names(Jude_thesis_dataset) # use janitor to clean column names
 
@@ -74,7 +74,8 @@ Climate_data_new <- filter(Climate_data_new, progress>40 & distribution_channel!
 val_lab(Climate_data_new$gender) = num_lab("
              1 Male
              2 Female   
-             3 Other    ")  # Add value labels
+             3 Other    
+             4 Prefer not to say")  # Add value labels
 
 val_lab(Climate_data_new$education) = num_lab("
              5 Doctoral Degree
@@ -83,8 +84,8 @@ val_lab(Climate_data_new$education) = num_lab("
              2 Bachelor degree
              1 Other    ") 
 
-Climate_data_new <- Climate_data_new %>%
-  mutate(gender = na_if(gender, 4)) # recode option 4 ('prefer not to say') into missing 
+#Climate_data_new <- Climate_data_new %>%
+ # mutate(gender = na_if(gender, 4)) # recode option 4 ('prefer not to say') into missing 
 
 ```
 
@@ -840,7 +841,7 @@ semPaths(fit_respecified,
 
 ```
 
-So it seems as if the model is a better fit if we exclude item 8 from the Avoidance subscale (""Distract myself to avoid thinking about it"). Recall that the reliability of this subscale was not great (0.66) - let's respecify the reliability without item 8. 
+So it seems as if the model is a better fit if we exclude item 8 from the Avoidance subscale (""Distract myself to avoid thinking about it"). Recall that the reliability of this subscale was not great (0.66) - let's respecify the reliability without item 8.
 
 ```{r compute respecified coping reliability, echo = FALSE, include = FALSE}
 coping_avoidance_new <- select(Climate_data_new, coping_9, coping_10, coping_11)
@@ -860,5 +861,4 @@ coping_reliability_new %>%
   kable_styling()
 ```
 
-
-Interestingly, this is not a tremendous improvement on the previous alpha. 
+Interestingly, this is not a tremendous improvement on the previous alpha.
