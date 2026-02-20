@@ -346,7 +346,7 @@ wami_reliability <- print(WAMI_alpha$total)
 
 ```{r calculate descriptive stats time 2, echo = FALSE, include = FALSE}
 
-myVars <- c("age", "years_working", "cbi_personal", "cbi_work", "hopeful_future_rating", "dass_depression" , "dass_anxiety", "dass_stress", "hogg_total_score", "coping_PF_score","coping_EF_score", "coping_avoidance_score", "SPOS_score", "SWEMWS_score", "WAMI_score", "gender", "education")
+myVars <- c("age", "cbi_personal", "cbi_work", "hope_1", "dass_depression" , "dass_anxiety", "dass_stress", "hogg_total_score", "coping_PF_score","coping_EF_score", "coping_avoidance_score", "SPOS_score", "SWEMWS_score", "WAMI_score", "gender", "education")
 catVars <- c("gender", "education")
 
 tab2_1 <- print(CreateTableOne(vars = "age", strata = "gender", data = Climate_data_new))
@@ -574,7 +574,7 @@ Preregistered analysis - Hypothesis 3: General linear model with psychological w
 ```{r wellbeing hypothesis 3, echo = FALSE}
 # make new variable for US vs. non-US
 
-Climate_data_new$USA <- str_detect(Climate_data_new$work_location, "US")
+Climate_data_new$USA <- str_detect(Climate_data_new$work_location, "US|USA|United States")
 
 # checkvars <- select(Climate_data_new, work_location, USA) # check we got them all? 
 
@@ -717,7 +717,7 @@ tab_hyp6  %>%
 
 ```
 
-Here we can see that Hypothesis 6 is also not supported; although work burnout has a large and highly significant negative effect on wellbeing, and perceived organisational support has a a small marginal effect, the interaction between them is not significant. The whole model is significant, $F$(`r hyp6_summary$fstatistic[[2]]`, `r hyp6_summary$fstatistic[[3]]`) = `r hyp6_summary$fstatistic[[1]]`, $R^2$ = `r hyp6_summary$r.squared`, $Adj. R^2$ = `r hyp6_summary$adj.r.squared`.
+Here we can see that Hypothesis 6 is also not supported; although work burnout has a large and highly significant negative effect on wellbeing, and perceived organisational support has a small marginal effect, the interaction between them is not significant. The whole model is significant, $F$(`r hyp6_summary$fstatistic[[2]]`, `r hyp6_summary$fstatistic[[3]]`) = `r hyp6_summary$fstatistic[[1]]`, $R^2$ = `r hyp6_summary$r.squared`, $Adj. R^2$ = `r hyp6_summary$adj.r.squared`.
 
 Let's have a look at that very strong correlation. Also, let's look at the raw relationship between perceoved organisational support and wellbeing (which is weakly positive in the overall analysis).
 
