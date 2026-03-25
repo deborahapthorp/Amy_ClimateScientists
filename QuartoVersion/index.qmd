@@ -517,6 +517,55 @@ hyp6 <- lm(SWEMWS_score ~ cbi_work*SPOS_score + age + gender, data = as.data.fra
 apa_hyp6 <- apa_print(hyp6)
 
 ```
+
+
+```{r correlation plot, echo = FALSE, warn = FALSE}
+wellbeing_scatter <- ggscatter(Climate_data_new, x = 'SWEMWS_score', y = 'cbi_work',
+          color = 'darkred', shape = 21, size = 2, 
+          add = 'reg.line', conf.int = TRUE, cor.coef = TRUE, 
+          cor.coeff.args = list(method = "spearman", label.x = 3.5, label.sep = "\n")) + xlab ('Copenhagen burnout inventory (work) score') + ylab('Wellbeing score')
+
+SPOS_scatter <- ggscatter(Climate_data_new, x = 'SPOS_score', y = 'cbi_work',
+          color = 'darkgreen', shape = 21, size = 2, 
+          add = 'reg.line', conf.int = TRUE, cor.coef = TRUE, 
+          cor.coeff.args = list(method = "spearman", label.x = 4.5, label.sep = "\n")) + xlab ('Perceived organisational support score') + ylab('Wellbeing score')
+
+#wellbeing_plot + SPOS_plot
+
+
+
+```
+
+
+```{r CFA analysis, echo = FALSE}
+
+# Confirmatory factor analysis of coping scales
+
+# set model
+coping_model <- 'Coping_PF =~ coping_1 + coping_2 + coping_3
+  Coping_EF =~ coping_4 + coping_5 + coping_6 + coping_7
+  Coping_AV =~ coping_8 + coping_9 + coping_10 + coping_11
+'
+
+fit <- cfa(coping_model,                                                 # compute CFA
+           data = Climate_data_new,
+           estimator ="MLR", 
+           missing = "ML")
+
+# analysis summary
+cfa_results <- summary(fit,                                                     
+        fit.measures = TRUE,                                                                
+        standardized = TRUE)
+
+fitstats <- cfa_results$fit
+
+fitstats_table <- fitstats[c("rmsea", "chisq", "cfi.robust", "tli.robust")]
+
+```
+
+
+
+
 <!-- The introduction should not have a level-1 heading such as Introduction. -->
 
 The threat of climate change’s consequences to human physical health have long been recognised, whilst the threat to mental health has received increasing attention over the past 10-15 years [@doherty_psychological_2011]. Researchers have proposed these effects to occur via one or more of three pathways: 1) direct exposure to extreme weather events (e.g., wildfires, floods); 2) indirect effects of extreme weather and long-term climatic changes (e.g., social unrest, forced migration); and 3) distress associated with the awareness of climate change and its anticipated consequences [@berry_climate_2010], often referred to as ‘climate anxiety’ or ‘eco-anxiety’ [@clayton_climate_2020]. Though there is no generally agreed-upon definition of this construct [@van_dijk_limited_2025], research has flourished in this space in recent years, showing reliably consistent relationships with symptoms of depression, anxiety, and stress [@cosh_relationship_2024], as well as [MORE HERE]
@@ -662,6 +711,22 @@ apa_table(
 )
 
 ```
+
+
+Interestingly, the raw relationship between organisational support and wellbeing was negative; this is illustrated in @fig-correlations . 
+
+```{r correlations figure, echo = FALSE}
+#| label: fig-correlations
+#| fig-cap: Scatter plots of the correlations between work burnout and wellbeing (left) and perceived organisational support and wellbeing (right).   
+#| apa-note: 
+#| fig-height: 4
+#| fig-width: 6
+
+wellbeing_scatter + SPOS_scatter
+
+```
+
+As an exploratory analysis, we also wanted to carry out a factor analysis on the coping scale, since it is a relatively new measure that has not been extensively validated. We chose confirmatory factor analysis in `lavaan`, since there are established subscales onto which the items are designed to load (problem-focused coping, emotion-focused coping and avoidance).
 
 # Discussion
 

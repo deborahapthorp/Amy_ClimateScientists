@@ -719,7 +719,7 @@ tab_hyp6  %>%
 
 Here we can see that Hypothesis 6 is also not supported; although work burnout has a large and highly significant negative effect on wellbeing, and perceived organisational support has a small marginal effect, the interaction between them is not significant. The whole model is significant, $F$(`r hyp6_summary$fstatistic[[2]]`, `r hyp6_summary$fstatistic[[3]]`) = `r hyp6_summary$fstatistic[[1]]`, $R^2$ = `r hyp6_summary$r.squared`, $Adj. R^2$ = `r hyp6_summary$adj.r.squared`.
 
-Let's have a look at that very strong correlation. Also, let's look at the raw relationship between perceoved organisational support and wellbeing (which is weakly positive in the overall analysis).
+Let's have a look at that very strong correlation. Also, let's look at the raw relationship between perceived organisational support and wellbeing (which is weakly positive in the overall analysis).
 
 ```{r correlation plot, echo = FALSE, warn = FALSE}
 wellbeing_plot <- ggscatter(Climate_data_new, x = 'SWEMWS_score', y = 'cbi_work',

@@ -79,8 +79,8 @@ author-note:
     affiliation-change: ~
     deceased: ~
   disclosures:
-    study-registration: This study was preregistered at the [OSF](https://osf.io/xegr7/registrations)
-    data-sharing: Raw data and code for the study are available on the OSF [link]
+    study-registration: This study was preregistered at the [OSF](https://osf.io/xegr7/registrations).
+    data-sharing: Raw data and code for the study are available on the OSF [link].
     related-report: ~
     conflict-of-interest: ~
     financial-support: ~
