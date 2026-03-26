@@ -742,7 +742,8 @@ Well, that's interesting! The raw relationship for organisational support is *ne
 
 ## Factor analysis
 
-As an exploratory analysis, we also wanted to carry out a factor analysis on the coping scale, since it is a relatively new measure that has not been extensively validated. I chose confirmatory factor analysis in `lavaan`, since there are established subscales onto which the items are designed to load (problem-focused coping, emotion-focused coping and avoidance).
+
+
 
 ```{r cfa coping, echo = FALSE}
 
